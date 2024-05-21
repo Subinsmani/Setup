@@ -5,22 +5,26 @@ def setup():
     while True:
         print("\nWelcome to the setup script!")
         print("Please select your OS flavor:")
-        print("1. Ubuntu")
-        print("2. Windows")
-        print("3. Exit")
-        choice = input("Enter your choice (1/2/3): ")
+        
+        os_directories = [d for d in os.listdir(os.getcwd()) if os.path.isdir(d) and not d.startswith('.')]
+        for idx, os_dir in enumerate(os_directories, start=1):
+            print(f"{idx}. {os_dir}")
+        print(f"{len(os_directories) + 1}. Exit")
 
-        if choice == '1':
-            os_flavor = 'Ubuntu'
-            list_tools(os_flavor)
-        elif choice == '2':
-            os_flavor = 'Windows'
-            list_tools(os_flavor)
-        elif choice == '3':
-            print("Exiting...")
-            break
+        choice = input(f"Enter your choice (1-{len(os_directories)+1}): ")
+
+        if choice.isdigit():
+            choice = int(choice)
+            if 1 <= choice <= len(os_directories):
+                os_flavor = os_directories[choice - 1]
+                list_tools(os_flavor)
+            elif choice == len(os_directories) + 1:
+                print("Exiting...")
+                break
+            else:
+                print("Invalid choice! Please enter a valid option.")
         else:
-            print("Invalid choice! Please enter a valid option.")
+            print("Invalid input. Please enter a number.")
 
 def list_tools(os_flavor):
     while True:
@@ -56,7 +60,7 @@ def list_tools(os_flavor):
         except FileNotFoundError:
             print("No tools directory found for the selected OS.")
             return
-
+    
 def run_tool_script(os_path, tool_script):
     script_path = os.path.join(os_path, tool_script)
     try:
