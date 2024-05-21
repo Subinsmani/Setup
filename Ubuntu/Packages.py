@@ -15,7 +15,12 @@ def install_packages():
     subprocess.run(['sudo', 'apt', 'upgrade', '-y'], check=True)
 
     print(f"Installing selected packages: {', '.join(package_list)}")
-    subprocess.run(['sudo', 'apt', 'install', '-y'] + package_list, check=True)
+    
+    # Install packages one by one to handle errors individually
+    for package in package_list:
+        result = subprocess.run(['sudo', 'apt', 'install', '-y', package], capture_output=True, text=True)
+        if result.returncode != 0:
+            print(f"Package '{package}' not found")
 
     print("Package installation complete!")
 
