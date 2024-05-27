@@ -1,2 +1,4 @@
 # Ignore the DEB directory
 DEB/
+# Ignore Download Files
+Downloads/

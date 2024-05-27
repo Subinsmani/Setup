@@ -3,8 +3,8 @@
         Write-Host "`nWelcome to the setup script!"
         Write-Host "Please select your OS flavor:"
 
-        # Get the list of directories and filter out 'DEB' and hidden directories
-        $osDirectories = @(Get-ChildItem -Directory -Path . | Where-Object { $_.Name -ne 'DEB' -and $_.Name -notmatch '^\.' } | Select-Object -ExpandProperty Name)
+        # Get the list of directories and filter out 'DEB', 'Downloads', and hidden directories
+        $osDirectories = @(Get-ChildItem -Directory -Path . | Where-Object { $_.Name -ne 'DEB' -and $_.Name -ne 'Downloads' -and $_.Name -notmatch '^\.' } | Select-Object -ExpandProperty Name)
 
         $osDirectories += "Exit"
 
@@ -146,7 +146,7 @@ function List-Tools {
                 return
             }
 
-            Write-Host "`nAvailable tools in ${osPath}:"
+            Write-Host "`nAvailable tools for Windows Server:"
             for ($idx = 0; $idx -lt $toolScripts.Count; $idx++) {
                 Write-Host "$($idx + 1). $($toolScripts[$idx])"
             }
@@ -184,7 +184,6 @@ function Run-ToolScript {
     )
 
     try {
-        Write-Host "Running script: $scriptPath"
         & $scriptPath
     } catch {
         Write-Host "An error occurred while running the script: $_"
