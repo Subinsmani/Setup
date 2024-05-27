@@ -6,7 +6,7 @@ def setup():
         print("\nWelcome to the setup script!")
         print("Please select your OS flavor:")
         
-        os_directories = [d for d in os.listdir(os.getcwd()) if os.path.isdir(d) and not d.startswith('.')]
+        os_directories = [d for d in os.listdir(os.getcwd()) if os.path.isdir(d) and not d.startswith('.') and d != 'DEB']
         for idx, os_dir in enumerate(os_directories, start=1):
             print(f"{idx}. {os_dir}")
         print(f"{len(os_directories) + 1}. Exit")
