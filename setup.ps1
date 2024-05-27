@@ -4,10 +4,7 @@
         Write-Host "Please select your OS flavor:"
 
         # Get the list of directories and filter out 'DEB' and hidden directories
-        $osDirectories = Get-ChildItem -Directory -Path . | Where-Object { $_.Name -ne 'DEB' -and $_.Name -notmatch '^\.' } | Select-Object -ExpandProperty Name
-
-        # Debugging: Print out the directories
-        Write-Host "Debug: OS Directories List - $($osDirectories -join ', ')"
+        $osDirectories = @(Get-ChildItem -Directory -Path . | Where-Object { $_.Name -ne 'DEB' -and $_.Name -notmatch '^\.' } | Select-Object -ExpandProperty Name)
 
         $osDirectories += "Exit"
 
@@ -27,7 +24,11 @@
                     break
                 } else {
                     $osFlavor = $osDirectories[$choice - 1]
-                    List-Tools -osFlavor $osFlavor
+                    if ($osFlavor -eq "Windows") {
+                        List-WindowsSubfolders -osFlavor $osFlavor
+                    } else {
+                        List-Subfolders -osFlavor $osFlavor
+                    }
                 }
             } else {
                 Write-Host "Invalid choice! Please enter a valid option."
@@ -38,7 +39,7 @@
     }
 }
 
-function List-Tools {
+function List-WindowsSubfolders {
     param (
         [string]$osFlavor
     )
@@ -46,13 +47,106 @@ function List-Tools {
     while ($true) {
         $osPath = Join-Path -Path (Get-Location) -ChildPath $osFlavor
         try {
-            $toolScripts = Get-ChildItem -Path $osPath -Filter *.ps1 | Select-Object -ExpandProperty BaseName
-            if ($toolScripts.Count -eq 0) {
-                Write-Host "No tools found for the selected OS."
+            $subFolders = @(Get-ChildItem -Directory -Path $osPath | Select-Object -ExpandProperty Name)
+
+            if ($subFolders.Count -eq 0) {
+                Write-Host "No subfolders found for the selected OS."
                 return
             }
 
-            Write-Host "`nAvailable tools for ${osFlavor}:"
+            Write-Host "`nAvailable Windows versions:"
+            for ($idx = 0; $idx -lt $subFolders.Count; $idx++) {
+                Write-Host "$($idx + 1). $($subFolders[$idx])"
+            }
+            Write-Host "$($subFolders.Count + 1). Back"
+            Write-Host "$($subFolders.Count + 2). Exit"
+
+            $folderChoice = Read-Host "Enter the number of the Windows version you want to explore"
+
+            if ($folderChoice -match '^\d+$') {
+                $folderChoice = [int]$folderChoice - 1
+                if ($folderChoice -ge 0 -and $folderChoice -lt $subFolders.Count) {
+                    $selectedFolder = $subFolders[$folderChoice]
+                    List-Tools -osPath (Join-Path -Path $osPath -ChildPath $selectedFolder)
+                } elseif ($folderChoice -eq $subFolders.Count) {
+                    return # Back to OS flavor selection
+                } elseif ($folderChoice -eq $subFolders.Count + 1) {
+                    Write-Host "Exiting..."
+                    exit
+                } else {
+                    Write-Host "Invalid choice!"
+                }
+            } else {
+                Write-Host "Invalid input. Please enter a number."
+            }
+        } catch {
+            Write-Host "No subfolders found for the selected OS."
+            return
+        }
+    }
+}
+
+function List-Subfolders {
+    param (
+        [string]$osFlavor
+    )
+
+    while ($true) {
+        $osPath = Join-Path -Path (Get-Location) -ChildPath $osFlavor
+        try {
+            $subFolders = @(Get-ChildItem -Directory -Path $osPath | Select-Object -ExpandProperty Name)
+
+            if ($subFolders.Count -eq 0) {
+                Write-Host "No subfolders found for the selected OS."
+                return
+            }
+
+            Write-Host "`nAvailable subfolders for ${osFlavor}:"
+            for ($idx = 0; $idx -lt $subFolders.Count; $idx++) {
+                Write-Host "$($idx + 1). $($subFolders[$idx])"
+            }
+            Write-Host "$($subFolders.Count + 1). Back"
+            Write-Host "$($subFolders.Count + 2). Exit"
+
+            $folderChoice = Read-Host "Enter the number of the subfolder you want to explore"
+
+            if ($folderChoice -match '^\d+$') {
+                $folderChoice = [int]$folderChoice - 1
+                if ($folderChoice -ge 0 -and $folderChoice -lt $subFolders.Count) {
+                    $selectedFolder = $subFolders[$folderChoice]
+                    List-Tools -osPath (Join-Path -Path $osPath -ChildPath $selectedFolder)
+                } elseif ($folderChoice -eq $subFolders.Count) {
+                    return # Back to OS flavor selection
+                } elseif ($folderChoice -eq $subFolders.Count + 1) {
+                    Write-Host "Exiting..."
+                    exit
+                } else {
+                    Write-Host "Invalid choice!"
+                }
+            } else {
+                Write-Host "Invalid input. Please enter a number."
+            }
+        } catch {
+            Write-Host "No subfolders found for the selected OS."
+            return
+        }
+    }
+}
+
+function List-Tools {
+    param (
+        [string]$osPath
+    )
+
+    while ($true) {
+        try {
+            $toolScripts = @(Get-ChildItem -Path $osPath -Filter *.ps1 | Select-Object -ExpandProperty BaseName)
+            if ($toolScripts.Count -eq 0) {
+                Write-Host "No tools found in the selected subfolder."
+                return
+            }
+
+            Write-Host "`nAvailable tools in ${osPath}:"
             for ($idx = 0; $idx -lt $toolScripts.Count; $idx++) {
                 Write-Host "$($idx + 1). $($toolScripts[$idx])"
             }
@@ -65,9 +159,9 @@ function List-Tools {
                 $toolChoice = [int]$toolChoice - 1
                 if ($toolChoice -ge 0 -and $toolChoice -lt $toolScripts.Count) {
                     $selectedTool = "$($toolScripts[$toolChoice]).ps1"
-                    Run-ToolScript -osPath $osPath -toolScript $selectedTool
+                    Run-ToolScript -scriptPath (Join-Path -Path $osPath -ChildPath $selectedTool)
                 } elseif ($toolChoice -eq $toolScripts.Count) {
-                    return # Back to OS flavor selection
+                    return # Back to subfolder selection
                 } elseif ($toolChoice -eq $toolScripts.Count + 1) {
                     Write-Host "Exiting..."
                     exit
@@ -78,7 +172,7 @@ function List-Tools {
                 Write-Host "Invalid input. Please enter a number."
             }
         } catch {
-            Write-Host "No tools directory found for the selected OS."
+            Write-Host "No tools found in the selected subfolder."
             return
         }
     }
@@ -86,11 +180,9 @@ function List-Tools {
 
 function Run-ToolScript {
     param (
-        [string]$osPath,
-        [string]$toolScript
+        [string]$scriptPath
     )
 
-    $scriptPath = Join-Path -Path $osPath -ChildPath $toolScript
     try {
         Write-Host "Running script: $scriptPath"
         & $scriptPath
